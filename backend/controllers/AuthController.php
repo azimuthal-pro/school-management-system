@@ -3,6 +3,7 @@
 require_once __DIR__ . '/../helpers/JWT.php';
 require_once __DIR__ . '/../helpers/Response.php';
 require_once __DIR__ . '/../models/User.php';
+require_once __DIR__ . '/../helpers/Validation.php';
 
 class AuthController {
     private $userModel;
@@ -32,8 +33,21 @@ class AuthController {
     public function register() {
         $input = json_decode(file_get_contents('php://input'), true);
 
-        if (!isset($input['name']) || !isset($input['email']) || !isset($input['password'])) {
-            Response::error('Name, email, and password are required', 400);
+        $rules = [
+            'name' => ['required', ['min', 2]],
+            'email' => ['required', 'email'],
+            'password' => ['required', ['min', 6]]
+        ];
+
+        $errors = Validation::validate($rules, $input);
+        if (!empty($errors)) {
+            Response::error(['validation' => $errors], 422);
+        }
+
+        // check duplicate email
+        $existing = $this->userModel->findByEmail($input['email']);
+        if ($existing) {
+            Response::error('Email already registered', 409);
         }
 
         $hashedPassword = password_hash($input['password'], PASSWORD_BCRYPT);
@@ -42,8 +56,12 @@ class AuthController {
             'name' => $input['name'],
             'email' => $input['email'],
             'password_hash' => $hashedPassword,
-            'role' => 'student'
+            'role' => $input['role'] ?? 'student'
         ]);
+
+        if (!$user) {
+            Response::error('Failed to create user', 500);
+        }
 
         Response::success($user, 'Registration successful', 201);
     }

@@ -4,6 +4,7 @@ require_once __DIR__ . '/../helpers/Response.php';
 require_once __DIR__ . '/../middleware/AuthMiddleware.php';
 require_once __DIR__ . '/../middleware/RoleMiddleware.php';
 require_once __DIR__ . '/../models/Attendance.php';
+require_once __DIR__ . '/../helpers/Validation.php';
 
 class AttendanceController {
     private $attendanceModel;
@@ -38,8 +39,16 @@ class AttendanceController {
     public function create() {
         $input = json_decode(file_get_contents('php://input'), true);
 
-        if (!isset($input['student_id']) || !isset($input['class_id']) || !isset($input['date']) || !isset($input['status'])) {
-            Response::error('student_id, class_id, date, and status are required', 400);
+        $rules = [
+            'student_id' => ['required', 'numeric'],
+            'class_id' => ['required', 'numeric'],
+            'date' => ['required', ['date_format', 'Y-m-d']],
+            'status' => ['required', ['in', ['present', 'absent', 'late']]]
+        ];
+
+        $errors = Validation::validate($rules, $input);
+        if (!empty($errors)) {
+            Response::error(['validation' => $errors], 422);
         }
 
         $input['teacher_id'] = $this->user['id'] ?? null;
@@ -55,7 +64,26 @@ class AttendanceController {
 
     public function update($id) {
         $input = json_decode(file_get_contents('php://input'), true);
-        
+
+        $rules = [];
+        if (isset($input['status'])) {
+            $rules['status'] = ['required', ['in', ['present', 'absent', 'late']]];
+        }
+        if (isset($input['date'])) {
+            $rules['date'] = ['required', ['date_format', 'Y-m-d']];
+        }
+        if (isset($input['student_id'])) {
+            $rules['student_id'] = ['required', 'numeric'];
+        }
+        if (isset($input['class_id'])) {
+            $rules['class_id'] = ['required', 'numeric'];
+        }
+
+        $errors = Validation::validate($rules, $input);
+        if (!empty($errors)) {
+            Response::error(['validation' => $errors], 422);
+        }
+
         $attendance = $this->attendanceModel->update($id, $input);
 
         if (!$attendance) {

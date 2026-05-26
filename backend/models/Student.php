@@ -106,5 +106,14 @@ class Student {
         
         return $result->fetch_all(MYSQLI_ASSOC);
     }
+
+    public function findByStudentNumber($studentNumber) {
+        $stmt = $this->conn->prepare("SELECT * FROM students WHERE student_number = ?");
+        $stmt->bind_param("s", $studentNumber);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        return $result->fetch_assoc();
+    }
 }
 ?>

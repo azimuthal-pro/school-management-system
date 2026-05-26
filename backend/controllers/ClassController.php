@@ -4,6 +4,7 @@ require_once __DIR__ . '/../helpers/Response.php';
 require_once __DIR__ . '/../middleware/AuthMiddleware.php';
 require_once __DIR__ . '/../middleware/RoleMiddleware.php';
 require_once __DIR__ . '/../models/SchoolClass.php';
+require_once __DIR__ . '/../helpers/Validation.php';
 
 class ClassController {
     private $classModel;
@@ -33,8 +34,14 @@ class ClassController {
     public function create() {
         $input = json_decode(file_get_contents('php://input'), true);
 
-        if (!isset($input['name'])) {
-            Response::error('Class name is required', 400);
+        $rules = [
+            'name' => ['required', ['min', 2]],
+            'year' => ['numeric']
+        ];
+
+        $errors = Validation::validate($rules, $input);
+        if (!empty($errors)) {
+            Response::error(['validation' => $errors], 422);
         }
 
         $class = $this->classModel->create($input);
@@ -48,7 +55,23 @@ class ClassController {
 
     public function update($id) {
         $input = json_decode(file_get_contents('php://input'), true);
-        
+
+        $rules = [];
+        if (isset($input['name'])) {
+            $rules['name'] = ['required', ['min', 2]];
+        }
+        if (isset($input['year'])) {
+            $rules['year'] = ['numeric'];
+        }
+        if (isset($input['section'])) {
+            $rules['section'] = [['min', 1]];
+        }
+
+        $errors = Validation::validate($rules, $input);
+        if (!empty($errors)) {
+            Response::error(['validation' => $errors], 422);
+        }
+
         $class = $this->classModel->update($id, $input);
 
         if (!$class) {

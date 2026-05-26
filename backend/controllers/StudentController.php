@@ -4,6 +4,7 @@ require_once __DIR__ . '/../helpers/Response.php';
 require_once __DIR__ . '/../middleware/AuthMiddleware.php';
 require_once __DIR__ . '/../middleware/RoleMiddleware.php';
 require_once __DIR__ . '/../models/Student.php';
+require_once __DIR__ . '/../helpers/Validation.php';
 
 class StudentController {
     private $studentModel;
@@ -33,8 +34,21 @@ class StudentController {
     public function create() {
         $input = json_decode(file_get_contents('php://input'), true);
 
-        if (!isset($input['user_id']) || !isset($input['student_number']) || !isset($input['class_id'])) {
-            Response::error('user_id, student_number, and class_id are required', 400);
+        $rules = [
+            'user_id' => ['required', ['numeric', true]],
+            'student_number' => ['required', ['min', 1]],
+            'class_id' => ['required', ['numeric', true]]
+        ];
+
+        $errors = Validation::validate($rules, $input);
+        if (!empty($errors)) {
+            Response::error(['validation' => $errors], 422);
+        }
+
+        // duplicate student number check
+        $existing = $this->studentModel->findByStudentNumber($input['student_number']);
+        if ($existing) {
+            Response::error('Student number already exists', 409);
         }
 
         $student = $this->studentModel->create($input);
@@ -48,7 +62,30 @@ class StudentController {
 
     public function update($id) {
         $input = json_decode(file_get_contents('php://input'), true);
-        
+
+        $rules = [];
+        if (isset($input['student_number'])) {
+            $rules['student_number'] = ['required', ['min', 1]];
+        }
+        if (isset($input['class_id'])) {
+            $rules['class_id'] = ['required', 'numeric'];
+        }
+        if (isset($input['date_of_birth'])) {
+            $rules['date_of_birth'] = ['required', ['date_format', 'Y-m-d']];
+        }
+
+        $errors = Validation::validate($rules, $input);
+        if (!empty($errors)) {
+            Response::error(['validation' => $errors], 422);
+        }
+
+        if (isset($input['student_number'])) {
+            $existing = $this->studentModel->findByStudentNumber($input['student_number']);
+            if ($existing && $existing['id'] != $id) {
+                Response::error('Student number already exists', 409);
+            }
+        }
+
         $student = $this->studentModel->update($id, $input);
 
         if (!$student) {

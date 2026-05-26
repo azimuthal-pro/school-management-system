@@ -102,5 +102,14 @@ class Subject {
         
         return $result->fetch_all(MYSQLI_ASSOC);
     }
+
+    public function findByCode($code) {
+        $stmt = $this->conn->prepare("SELECT * FROM subjects WHERE code = ?");
+        $stmt->bind_param("s", $code);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        return $result->fetch_assoc();
+    }
 }
 ?>

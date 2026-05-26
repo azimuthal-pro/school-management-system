@@ -81,5 +81,14 @@ class Teacher {
         
         return $stmt->execute();
     }
+
+    public function findByEmployeeNumber($employeeNumber) {
+        $stmt = $this->conn->prepare("SELECT * FROM teachers WHERE employee_number = ?");
+        $stmt->bind_param("s", $employeeNumber);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        return $result->fetch_assoc();
+    }
 }
 ?>

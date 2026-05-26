@@ -4,6 +4,7 @@ require_once __DIR__ . '/../helpers/Response.php';
 require_once __DIR__ . '/../middleware/AuthMiddleware.php';
 require_once __DIR__ . '/../middleware/RoleMiddleware.php';
 require_once __DIR__ . '/../models/Teacher.php';
+require_once __DIR__ . '/../helpers/Validation.php';
 
 class TeacherController {
     private $teacherModel;
@@ -33,8 +34,19 @@ class TeacherController {
     public function create() {
         $input = json_decode(file_get_contents('php://input'), true);
 
-        if (!isset($input['user_id']) || !isset($input['employee_number'])) {
-            Response::error('user_id and employee_number are required', 400);
+        $rules = [
+            'user_id' => ['required', 'numeric'],
+            'employee_number' => ['required', ['min', 1]]
+        ];
+
+        $errors = Validation::validate($rules, $input);
+        if (!empty($errors)) {
+            Response::error(['validation' => $errors], 422);
+        }
+
+        $existing = $this->teacherModel->findByEmployeeNumber($input['employee_number']);
+        if ($existing) {
+            Response::error('Employee number already exists', 409);
         }
 
         $teacher = $this->teacherModel->create($input);
@@ -48,7 +60,27 @@ class TeacherController {
 
     public function update($id) {
         $input = json_decode(file_get_contents('php://input'), true);
-        
+
+        $rules = [];
+        if (isset($input['employee_number'])) {
+            $rules['employee_number'] = ['required', ['min', 1]];
+        }
+        if (isset($input['phone'])) {
+            $rules['phone'] = [['min', 7]];
+        }
+
+        $errors = Validation::validate($rules, $input);
+        if (!empty($errors)) {
+            Response::error(['validation' => $errors], 422);
+        }
+
+        if (isset($input['employee_number'])) {
+            $existing = $this->teacherModel->findByEmployeeNumber($input['employee_number']);
+            if ($existing && $existing['id'] != $id) {
+                Response::error('Employee number already exists', 409);
+            }
+        }
+
         $teacher = $this->teacherModel->update($id, $input);
 
         if (!$teacher) {

@@ -4,6 +4,7 @@ require_once __DIR__ . '/../helpers/Response.php';
 require_once __DIR__ . '/../middleware/AuthMiddleware.php';
 require_once __DIR__ . '/../middleware/RoleMiddleware.php';
 require_once __DIR__ . '/../models/Grade.php';
+require_once __DIR__ . '/../helpers/Validation.php';
 
 class GradeController {
     private $gradeModel;
@@ -38,8 +39,15 @@ class GradeController {
     public function create() {
         $input = json_decode(file_get_contents('php://input'), true);
 
-        if (!isset($input['student_id']) || !isset($input['subject_id']) || !isset($input['score'])) {
-            Response::error('student_id, subject_id, and score are required', 400);
+        $rules = [
+            'student_id' => ['required', 'numeric'],
+            'subject_id' => ['required', 'numeric'],
+            'score' => ['required', 'numeric', ['between', [0, 100]]]
+        ];
+
+        $errors = Validation::validate($rules, $input);
+        if (!empty($errors)) {
+            Response::error(['validation' => $errors], 422);
         }
 
         $input['teacher_id'] = $this->user['id'] ?? null;
@@ -55,7 +63,26 @@ class GradeController {
 
     public function update($id) {
         $input = json_decode(file_get_contents('php://input'), true);
-        
+
+        $rules = [];
+        if (isset($input['score'])) {
+            $rules['score'] = ['required', 'numeric', ['between', [0, 100]]];
+        }
+        if (isset($input['student_id'])) {
+            $rules['student_id'] = ['required', 'numeric'];
+        }
+        if (isset($input['subject_id'])) {
+            $rules['subject_id'] = ['required', 'numeric'];
+        }
+        if (isset($input['term'])) {
+            $rules['term'] = [['min', 1]];
+        }
+
+        $errors = Validation::validate($rules, $input);
+        if (!empty($errors)) {
+            Response::error(['validation' => $errors], 422);
+        }
+
         $grade = $this->gradeModel->update($id, $input);
 
         if (!$grade) {

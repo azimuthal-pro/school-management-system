@@ -4,6 +4,7 @@ require_once __DIR__ . '/../helpers/Response.php';
 require_once __DIR__ . '/../middleware/AuthMiddleware.php';
 require_once __DIR__ . '/../middleware/RoleMiddleware.php';
 require_once __DIR__ . '/../models/Subject.php';
+require_once __DIR__ . '/../helpers/Validation.php';
 
 class SubjectController {
     private $subjectModel;
@@ -33,8 +34,19 @@ class SubjectController {
     public function create() {
         $input = json_decode(file_get_contents('php://input'), true);
 
-        if (!isset($input['name']) || !isset($input['code'])) {
-            Response::error('Subject name and code are required', 400);
+        $rules = [
+            'name' => ['required', ['min', 2]],
+            'code' => ['required', ['min', 1]]
+        ];
+
+        $errors = Validation::validate($rules, $input);
+        if (!empty($errors)) {
+            Response::error(['validation' => $errors], 422);
+        }
+
+        $existing = $this->subjectModel->findByCode($input['code']);
+        if ($existing) {
+            Response::error('Subject code already exists', 409);
         }
 
         $subject = $this->subjectModel->create($input);
@@ -48,7 +60,30 @@ class SubjectController {
 
     public function update($id) {
         $input = json_decode(file_get_contents('php://input'), true);
-        
+
+        $rules = [];
+        if (isset($input['name'])) {
+            $rules['name'] = ['required', ['min', 2]];
+        }
+        if (isset($input['code'])) {
+            $rules['code'] = ['required', ['min', 1]];
+        }
+        if (isset($input['teacher_id'])) {
+            $rules['teacher_id'] = ['numeric'];
+        }
+
+        $errors = Validation::validate($rules, $input);
+        if (!empty($errors)) {
+            Response::error(['validation' => $errors], 422);
+        }
+
+        if (isset($input['code'])) {
+            $existing = $this->subjectModel->findByCode($input['code']);
+            if ($existing && $existing['id'] != $id) {
+                Response::error('Subject code already exists', 409);
+            }
+        }
+
         $subject = $this->subjectModel->update($id, $input);
 
         if (!$subject) {

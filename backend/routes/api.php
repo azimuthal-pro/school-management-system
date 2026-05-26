@@ -3,6 +3,7 @@
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../helpers/Response.php';
 
+
 $request = $_GET['request'] ?? '';
 $method = $_SERVER['REQUEST_METHOD'];
 
@@ -16,6 +17,12 @@ $parts = array_values($parts); // Re-index array
 $endpoint = $parts[0] ?? '';
 $action = $parts[1] ?? '';
 $id = $parts[2] ?? '';
+
+// Enforce AuthMiddleware for all endpoints except 'auth'
+if ($endpoint !== 'auth') {
+    require_once __DIR__ . '/../middleware/AuthMiddleware.php';
+    AuthMiddleware::verify();
+}
 
 // AUTH ROUTES
 if ($endpoint === 'auth') {
@@ -227,6 +234,22 @@ else if ($endpoint === 'subjects') {
         }
     } else {
         Response::error('Subject endpoint not found', 404);
+    }
+}
+
+// REPORTS ROUTES
+else if ($endpoint === 'reports') {
+    require_once __DIR__ . '/../controllers/ReportController.php';
+    $controller = new ReportController();
+
+    if ($action === 'attendance' && $method === 'GET') {
+        $controller->attendanceSummary();
+    } else if ($action === 'grades' && $method === 'GET') {
+        $controller->gradeSummary();
+    } else if ($action === 'student' && is_numeric($id) && $method === 'GET') {
+        $controller->studentReport($id);
+    } else {
+        Response::error('Report endpoint not found', 404);
     }
 }
 
