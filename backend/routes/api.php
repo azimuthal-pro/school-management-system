@@ -7,8 +7,10 @@ require_once __DIR__ . '/../helpers/Response.php';
 $request = $_GET['request'] ?? '';
 $method = $_SERVER['REQUEST_METHOD'];
 
-$db = new Database();
-$db->connect();
+// Handle CORS preflight requests
+if ($method === 'OPTIONS') {
+    exit(0);
+}
 
 // Route handling
 $parts = array_filter(explode('/', trim($request, '/')));
@@ -17,12 +19,6 @@ $parts = array_values($parts); // Re-index array
 $endpoint = $parts[0] ?? '';
 $action = $parts[1] ?? '';
 $id = $parts[2] ?? '';
-
-// Enforce AuthMiddleware for all endpoints except 'auth'
-if ($endpoint !== 'auth') {
-    require_once __DIR__ . '/../middleware/AuthMiddleware.php';
-    AuthMiddleware::verify();
-}
 
 // AUTH ROUTES
 if ($endpoint === 'auth') {
@@ -36,6 +32,12 @@ if ($endpoint === 'auth') {
     } else {
         Response::error('Auth endpoint not found', 404);
     }
+}
+
+// Enforce AuthMiddleware for all endpoints except 'auth'
+if ($endpoint !== 'auth') {
+    require_once __DIR__ . '/../middleware/AuthMiddleware.php';
+    AuthMiddleware::verify();
 }
 
 // STUDENT ROUTES
@@ -250,6 +252,31 @@ else if ($endpoint === 'reports') {
         $controller->studentReport($id);
     } else {
         Response::error('Report endpoint not found', 404);
+    }
+}
+
+// USERS ROUTES (Admin only)
+else if ($endpoint === 'users') {
+    require_once __DIR__ . '/../controllers/UserController.php';
+    $controller = new UserController();
+    
+    if (!$action) {
+        // /users - GET all
+        if ($method === 'GET') {
+            $controller->getAll();
+        }
+    } else if (is_numeric($action)) {
+        // /users/{id} - GET by id
+        $userId = $action;
+        if ($method === 'GET') {
+            $controller->getById($userId);
+        } else if ($method === 'PUT') {
+            $controller->updateRole($userId);
+        } else if ($method === 'DELETE') {
+            $controller->delete($userId);
+        }
+    } else {
+        Response::error('User endpoint not found', 404);
     }
 }
 

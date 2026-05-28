@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { getReports, getClasses } from '../../services/teacherService';
+import { getReports } from '../../services/teacherService';
+import { getClasses } from '../../services/studentService';
 import { useAuth } from '@/context/AuthContext';
 
 interface Class {

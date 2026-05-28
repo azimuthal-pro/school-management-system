@@ -17,11 +17,6 @@ export const login = async (email: string, password: string) => {
   return response;
 };
 
-export const logout = () => {
-  localStorage.removeItem('auth_token');
-  localStorage.removeItem('auth_user');
-};
-
 export const register = async (name: string, email: string, password: string) => {
   return apiCall('/auth/register', {
     method: 'POST',

@@ -1,10 +1,12 @@
 <?php
 
+require_once __DIR__ . '/../config/database.php';
+
 class User {
     private $conn;
 
     public function __construct() {
-        $db = new Database();
+        $db = Database::getInstance();
         $this->conn = $db->connect();
     }
 

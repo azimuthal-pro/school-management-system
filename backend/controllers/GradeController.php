@@ -12,7 +12,7 @@ class GradeController {
 
     public function __construct() {
         $this->gradeModel = new Grade();
-        $this->user = AuthMiddleware::verify();
+        $this->user = AuthMiddleware::getUser();
         RoleMiddleware::checkRole($this->user, ['admin', 'teacher']);
     }
 

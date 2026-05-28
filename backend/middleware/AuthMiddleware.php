@@ -4,7 +4,14 @@ require_once __DIR__ . '/../helpers/JWT.php';
 require_once __DIR__ . '/../helpers/Response.php';
 
 class AuthMiddleware {
+    private static $user = null;
+
     public static function verify() {
+        // Return cached user if already verified
+        if (self::$user !== null) {
+            return self::$user;
+        }
+
         $headers = getallheaders();
         $token = null;
 
@@ -25,7 +32,16 @@ class AuthMiddleware {
             Response::error('Unauthorized: Invalid token', 401);
         }
 
-        return $decoded;
+        self::$user = $decoded;
+        return self::$user;
+    }
+
+    public static function getUser() {
+        return self::$user;
+    }
+
+    public static function clearUser() {
+        self::$user = null;
     }
 }
 ?>

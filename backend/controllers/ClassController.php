@@ -12,7 +12,7 @@ class ClassController {
 
     public function __construct() {
         $this->classModel = new SchoolClass();
-        $this->user = AuthMiddleware::verify();
+        $this->user = AuthMiddleware::getUser();
         RoleMiddleware::checkRole($this->user, ['admin']);
     }
 

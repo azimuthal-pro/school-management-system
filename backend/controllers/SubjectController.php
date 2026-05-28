@@ -12,7 +12,7 @@ class SubjectController {
 
     public function __construct() {
         $this->subjectModel = new Subject();
-        $this->user = AuthMiddleware::verify();
+        $this->user = AuthMiddleware::getUser();
         RoleMiddleware::checkRole($this->user, ['admin', 'teacher']);
     }
 

@@ -12,7 +12,7 @@ class AttendanceController {
 
     public function __construct() {
         $this->attendanceModel = new Attendance();
-        $this->user = AuthMiddleware::verify();
+        $this->user = AuthMiddleware::getUser();
         RoleMiddleware::checkRole($this->user, ['admin', 'teacher']);
     }
 

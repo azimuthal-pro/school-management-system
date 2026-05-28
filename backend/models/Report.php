@@ -6,7 +6,7 @@ class Report {
     private $conn;
 
     public function __construct() {
-        $db = new Database();
+        $db = Database::getInstance();
         $this->conn = $db->connect();
     }
 

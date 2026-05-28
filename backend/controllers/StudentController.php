@@ -12,7 +12,7 @@ class StudentController {
 
     public function __construct() {
         $this->studentModel = new Student();
-        $this->user = AuthMiddleware::verify();
+        $this->user = AuthMiddleware::getUser();
         RoleMiddleware::checkRole($this->user, ['admin', 'teacher']);
     }
 
@@ -35,9 +35,9 @@ class StudentController {
         $input = json_decode(file_get_contents('php://input'), true);
 
         $rules = [
-            'user_id' => ['required', ['numeric', true]],
+            'user_id' => ['required', 'numeric'],
             'student_number' => ['required', ['min', 1]],
-            'class_id' => ['required', ['numeric', true]]
+            'class_id' => ['required', 'numeric']
         ];
 
         $errors = Validation::validate($rules, $input);

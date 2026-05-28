@@ -12,7 +12,7 @@ class TeacherController {
 
     public function __construct() {
         $this->teacherModel = new Teacher();
-        $this->user = AuthMiddleware::verify();
+        $this->user = AuthMiddleware::getUser();
         RoleMiddleware::checkRole($this->user, ['admin']);
     }
 

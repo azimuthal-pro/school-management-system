@@ -22,5 +22,6 @@ export const getClasses = async () => {
 };
 
 export const getUsers = async () => {
-  return apiCall('/users');
+  const response = await apiCall('/users');
+  return response;
 };

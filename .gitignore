@@ -1,0 +1,12 @@
+# Environment variables
+.env
+.env.local
+
+# Apache config
+.htaccess
+
+# Build artifacts
+*/.next/
+node_modules/
+vendor/
+*.log

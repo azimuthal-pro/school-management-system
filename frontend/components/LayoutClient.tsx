@@ -12,6 +12,9 @@ export default function LayoutClient({ children }: { children: ReactNode }) {
   // Don't show header on login page
   const showHeader = isAuthenticated && pathname !== '/login';
 
+  // Check if user is admin
+  const isAdmin = user?.role === 'admin';
+
   return (
     <>
       {showHeader && (
@@ -33,6 +36,11 @@ export default function LayoutClient({ children }: { children: ReactNode }) {
               <Link href="/reports" className="hover:text-blue-100">
                 Reports
               </Link>
+              {isAdmin && (
+                <Link href="/admin" className="hover:text-blue-100 font-semibold">
+                  Admin
+                </Link>
+              )}
             </nav>
             <div className="flex items-center gap-4">
               <span className="text-sm">{user?.name || 'User'}</span>

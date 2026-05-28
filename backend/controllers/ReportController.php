@@ -11,7 +11,7 @@ class ReportController {
 
     public function __construct() {
         $this->reportModel = new Report();
-        $this->user = AuthMiddleware::verify();
+        $this->user = AuthMiddleware::getUser();
         RoleMiddleware::checkRole($this->user, ['admin', 'teacher']);
     }
 
