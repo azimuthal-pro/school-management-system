@@ -42,7 +42,7 @@ class StudentController {
 
         $errors = Validation::validate($rules, $input);
         if (!empty($errors)) {
-            Response::error(['validation' => $errors], 422);
+            Response::error('Validation failed', 422, $errors);
         }
 
         // duplicate student number check
@@ -76,7 +76,7 @@ class StudentController {
 
         $errors = Validation::validate($rules, $input);
         if (!empty($errors)) {
-            Response::error(['validation' => $errors], 422);
+            Response::error('Validation failed', 422, $errors);
         }
 
         if (isset($input['student_number'])) {

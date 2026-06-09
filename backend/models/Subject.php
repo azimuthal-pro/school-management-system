@@ -34,11 +34,13 @@ class Subject {
     }
 
     public function create($data) {
+        $teacherId = $data['teacher_id'] ?? null;
+
         $stmt = $this->conn->prepare("INSERT INTO subjects (name, code, teacher_id) VALUES (?, ?, ?)");
         $stmt->bind_param("ssi", 
             $data['name'], 
             $data['code'], 
-            $data['teacher_id'] ?? null
+            $teacherId
         );
 
         if ($stmt->execute()) {

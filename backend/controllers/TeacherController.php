@@ -41,7 +41,7 @@ class TeacherController {
 
         $errors = Validation::validate($rules, $input);
         if (!empty($errors)) {
-            Response::error(['validation' => $errors], 422);
+            Response::error('Validation failed', 422, $errors);
         }
 
         $existing = $this->teacherModel->findByEmployeeNumber($input['employee_number']);
@@ -71,7 +71,7 @@ class TeacherController {
 
         $errors = Validation::validate($rules, $input);
         if (!empty($errors)) {
-            Response::error(['validation' => $errors], 422);
+            Response::error('Validation failed', 422, $errors);
         }
 
         if (isset($input['employee_number'])) {

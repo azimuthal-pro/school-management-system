@@ -33,14 +33,17 @@ class Student {
     }
 
     public function create($data) {
+        $dateOfBirth = $data['date_of_birth'] ?? null;
+        $address = $data['address'] ?? null;
+
         $stmt = $this->conn->prepare("INSERT INTO students (user_id, student_number, class_id, date_of_birth, address) 
                                       VALUES (?, ?, ?, ?, ?)");
         $stmt->bind_param("isiss", 
             $data['user_id'], 
             $data['student_number'], 
             $data['class_id'], 
-            $data['date_of_birth'] ?? null, 
-            $data['address'] ?? null
+            $dateOfBirth, 
+            $address
         );
 
         if ($stmt->execute()) {
@@ -59,6 +62,11 @@ class Student {
             $updates[] = "class_id = ?";
             $params[] = $data['class_id'];
             $types .= "i";
+        }
+        if (isset($data['student_number'])) {
+            $updates[] = "student_number = ?";
+            $params[] = $data['student_number'];
+            $types .= "s";
         }
         if (isset($data['date_of_birth'])) {
             $updates[] = "date_of_birth = ?";

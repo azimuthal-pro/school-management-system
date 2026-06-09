@@ -7,36 +7,65 @@ class JWT {
         if (self::$secret === null) {
             self::$secret = getenv('JWT_SECRET');
             if (empty(self::$secret)) {
-                // Fallback: generate a random secret if not set (warn in logs)
-                error_log('WARNING: JWT_SECRET not set in environment. Using insecure default.');
-                self::$secret = 'your-secret-key-change-this-in-env';
+                error_log('CRITICAL: JWT_SECRET environment variable is not set.');
+                throw new \RuntimeException('JWT_SECRET environment variable is required.');
             }
         }
         return self::$secret;
     }
 
-    public static function encode($data, $expiration = 3600) {
-        $secret = self::getSecret();
-        $header = base64_encode(json_encode(['typ' => 'JWT', 'alg' => 'HS256']));
-        $payload = base64_encode(json_encode(array_merge($data, ['exp' => time() + $expiration])));
-        $signature = base64_encode(hash_hmac('sha256', "$header.$payload", $secret, true));
+    /**
+     * Base64Url encode — URL-safe alternative to base64_encode.
+     */
+    private static function base64urlEncode($data) {
+        return rtrim(strtr(base64_encode($data), '+/', '-_'), '=');
+    }
 
-        return "$header.$payload.$signature";
+    /**
+     * Base64Url decode.
+     */
+    private static function base64urlDecode($data) {
+        return base64_decode(strtr($data, '-_', '+/'));
+    }
+
+    public static function encode($payload, $expiration = 3600) {
+        $secret = self::getSecret();
+        $issuedAt = time();
+
+        $header = self::base64urlEncode(json_encode(['typ' => 'JWT', 'alg' => 'HS256']));
+        $data = array_merge($payload, [
+            'iat' => $issuedAt,
+            'exp' => $issuedAt + $expiration,
+        ]);
+        $payloadEncoded = self::base64urlEncode(json_encode($data));
+        $signature = self::base64urlEncode(
+            hash_hmac('sha256', "$header.$payloadEncoded", $secret, true)
+        );
+
+        return "$header.$payloadEncoded.$signature";
     }
 
     public static function decode($token) {
         $secret = self::getSecret();
-        list($header, $payload, $signature) = explode('.', $token);
+        $parts = explode('.', $token);
 
-        $valid_signature = base64_encode(hash_hmac('sha256', "$header.$payload", $secret, true));
-
-        if ($signature !== $valid_signature) {
+        if (count($parts) !== 3) {
             return null;
         }
 
-        $decoded = json_decode(base64_decode($payload), true);
+        [$header, $payloadEncoded, $signature] = $parts;
 
-        if (isset($decoded['exp']) && $decoded['exp'] < time()) {
+        $expectedSignature = self::base64urlEncode(
+            hash_hmac('sha256', "$header.$payloadEncoded", $secret, true)
+        );
+
+        if (!hash_equals($expectedSignature, $signature)) {
+            return null;
+        }
+
+        $decoded = json_decode(self::base64urlDecode($payloadEncoded), true);
+
+        if (!$decoded || !isset($decoded['exp']) || $decoded['exp'] < time()) {
             return null;
         }
 

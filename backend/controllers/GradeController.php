@@ -17,7 +17,13 @@ class GradeController {
     }
 
     public function getAll() {
-        $grades = $this->gradeModel->getAll();
+        $filters = [
+            'student_id' => $_GET['student_id'] ?? null,
+            'class_id' => $_GET['class_id'] ?? null,
+            'subject_id' => $_GET['subject_id'] ?? null,
+        ];
+
+        $grades = $this->gradeModel->getAll($filters);
         Response::success($grades, 'Grades retrieved successfully', 200);
     }
 
@@ -47,10 +53,10 @@ class GradeController {
 
         $errors = Validation::validate($rules, $input);
         if (!empty($errors)) {
-            Response::error(['validation' => $errors], 422);
+            Response::error('Validation failed', 422, $errors);
         }
 
-        $input['teacher_id'] = $this->user['id'] ?? null;
+        $input['teacher_id'] = $this->gradeModel->getTeacherIdByUserId($this->user['id'] ?? null);
 
         $grade = $this->gradeModel->create($input);
 
@@ -74,13 +80,16 @@ class GradeController {
         if (isset($input['subject_id'])) {
             $rules['subject_id'] = ['required', 'numeric'];
         }
+        if (isset($input['class_id'])) {
+            $rules['class_id'] = ['required', 'numeric'];
+        }
         if (isset($input['term'])) {
             $rules['term'] = [['min', 1]];
         }
 
         $errors = Validation::validate($rules, $input);
         if (!empty($errors)) {
-            Response::error(['validation' => $errors], 422);
+            Response::error('Validation failed', 422, $errors);
         }
 
         $grade = $this->gradeModel->update($id, $input);

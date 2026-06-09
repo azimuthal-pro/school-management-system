@@ -5,6 +5,10 @@ require_once __DIR__ . '/../helpers/Response.php';
 
 
 $request = $_GET['request'] ?? '';
+if ($request === '') {
+    $path = parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH);
+    $request = trim($path, '/');
+}
 $method = $_SERVER['REQUEST_METHOD'];
 
 // Handle CORS preflight requests
@@ -16,11 +20,20 @@ if ($method === 'OPTIONS') {
 $parts = array_filter(explode('/', trim($request, '/')));
 $parts = array_values($parts); // Re-index array
 
+// Strip 'api' prefix if present, or strip 'sms/public' if using Apache in htdocs
+if (($parts[0] ?? '') === 'api') {
+    array_shift($parts);
+} else if (($parts[0] ?? '') === 'sms' && ($parts[1] ?? '') === 'public') {
+    // Remove 'sms/public' prefix for Apache setup
+    array_shift($parts); // Remove 'sms'
+    array_shift($parts); // Remove 'public'
+}
+
 $endpoint = $parts[0] ?? '';
 $action = $parts[1] ?? '';
 $id = $parts[2] ?? '';
 
-// AUTH ROUTES
+// AUTH ROUTES — no auth middleware required
 if ($endpoint === 'auth') {
     require_once __DIR__ . '/../controllers/AuthController.php';
     $controller = new AuthController();
@@ -34,14 +47,14 @@ if ($endpoint === 'auth') {
     }
 }
 
-// Enforce AuthMiddleware for all endpoints except 'auth'
+// All other endpoints require authentication
 if ($endpoint !== 'auth') {
     require_once __DIR__ . '/../middleware/AuthMiddleware.php';
     AuthMiddleware::verify();
 }
 
-// STUDENT ROUTES
-else if ($endpoint === 'students') {
+    // STUDENT ROUTES
+if ($endpoint === 'students') {
     require_once __DIR__ . '/../controllers/StudentController.php';
     $controller = new StudentController();
     
@@ -190,7 +203,9 @@ else if ($endpoint === 'classes') {
     } else if (is_numeric($action)) {
         // /classes/{id} - GET by id, PUT update, DELETE
         $classId = $action;
-        if ($method === 'GET') {
+        if ($id === 'students' && $method === 'GET') {
+            $controller->getStudents($classId);
+        } else if ($method === 'GET') {
             $controller->getById($classId);
         } else if ($method === 'PUT') {
             $controller->update($classId);
@@ -198,7 +213,7 @@ else if ($endpoint === 'classes') {
             $controller->delete($classId);
         }
     } else if ($action === 'students' && is_numeric($id)) {
-        // /classes/{id}/students
+        // /classes/students/{id}
         if ($method === 'GET') {
             $controller->getStudents($id);
         }

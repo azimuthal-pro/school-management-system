@@ -31,12 +31,14 @@ class Teacher {
     }
 
     public function create($data) {
+        $phone = $data['phone'] ?? null;
+
         $stmt = $this->conn->prepare("INSERT INTO teachers (user_id, employee_number, phone) 
                                       VALUES (?, ?, ?)");
         $stmt->bind_param("iss", 
             $data['user_id'], 
             $data['employee_number'], 
-            $data['phone'] ?? null
+            $phone
         );
 
         if ($stmt->execute()) {
@@ -54,6 +56,11 @@ class Teacher {
         if (isset($data['phone'])) {
             $updates[] = "phone = ?";
             $params[] = $data['phone'];
+            $types .= "s";
+        }
+        if (isset($data['employee_number'])) {
+            $updates[] = "employee_number = ?";
+            $params[] = $data['employee_number'];
             $types .= "s";
         }
 

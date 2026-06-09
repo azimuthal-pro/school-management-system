@@ -5,7 +5,6 @@ require_once __DIR__ . '/../middleware/AuthMiddleware.php';
 require_once __DIR__ . '/../middleware/RoleMiddleware.php';
 require_once __DIR__ . '/../models/User.php';
 require_once __DIR__ . '/../helpers/Validation.php';
-require_once __DIR__ . '/../config/database.php';
 
 class UserController {
     private $userModel;
@@ -18,71 +17,49 @@ class UserController {
     }
 
     public function getAll() {
-        // Get all users without password hashes
-        $db = Database::getInstance()->connect();
-        $stmt = $db->prepare("SELECT id, name, email, role, created_at FROM users ORDER BY created_at DESC");
-        $stmt->execute();
-        $result = $stmt->get_result();
-        
-        $users = $result->fetch_all(MYSQLI_ASSOC);
+        $users = $this->userModel->getAll();
         Response::success($users, 'Users retrieved successfully', 200);
     }
 
     public function getById($id) {
-        $db = Database::getInstance()->connect();
-        $stmt = $db->prepare("SELECT id, name, email, role, created_at FROM users WHERE id = ?");
-        $stmt->bind_param("i", $id);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        
-        $user = $result->fetch_assoc();
-        
+        $user = $this->userModel->getById($id);
+
         if (!$user) {
             Response::error('User not found', 404);
         }
-        
+
         Response::success($user, 'User retrieved successfully', 200);
     }
 
     public function updateRole($id) {
         $input = json_decode(file_get_contents('php://input'), true);
-        
+
         $rules = [
-            'role' => ['required', ['in', ['admin', 'teacher', 'student']]]
+            'role' => ['required', ['in', ['admin', 'teacher', 'student']]],
         ];
-        
+
         $errors = Validation::validate($rules, $input);
         if (!empty($errors)) {
-            Response::error(['validation' => $errors], 422);
+            Response::error('Validation failed', 422, $errors);
         }
-        
-        $db = Database::getInstance()->connect();
-        $stmt = $db->prepare("UPDATE users SET role = ? WHERE id = ?");
-        $stmt->bind_param("si", $input['role'], $id);
-        
-        if ($stmt->execute()) {
+
+        if ($this->userModel->updateRole($id, $input['role'])) {
             Response::success(null, 'User role updated successfully', 200);
-        } else {
-            Response::error('Failed to update user role', 500);
         }
+
+        Response::error('Failed to update user role', 500);
     }
 
     public function delete($id) {
-        $db = Database::getInstance()->connect();
-        
         // Prevent self-deletion
-        if ($id == $this->authUser['id']) {
+        if ((int) $id === (int) ($this->authUser['id'] ?? 0)) {
             Response::error('Cannot delete your own account', 400);
         }
-        
-        $stmt = $db->prepare("DELETE FROM users WHERE id = ?");
-        $stmt->bind_param("i", $id);
-        
-        if ($stmt->execute()) {
+
+        if ($this->userModel->delete($id)) {
             Response::success(null, 'User deleted successfully', 200);
-        } else {
-            Response::error('Failed to delete user', 500);
         }
+
+        Response::error('Failed to delete user', 500);
     }
 }
-?>

@@ -28,11 +28,14 @@ class SchoolClass {
     }
 
     public function create($data) {
+        $section = $data['section'] ?? null;
+        $year = $data['year'] ?? date('Y');
+
         $stmt = $this->conn->prepare("INSERT INTO classes (name, section, year) VALUES (?, ?, ?)");
         $stmt->bind_param("ssi", 
             $data['name'], 
-            $data['section'] ?? null, 
-            $data['year'] ?? date('Y')
+            $section, 
+            $year
         );
 
         if ($stmt->execute()) {

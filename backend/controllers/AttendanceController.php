@@ -17,7 +17,13 @@ class AttendanceController {
     }
 
     public function getAll() {
-        $attendance = $this->attendanceModel->getAll();
+        $filters = [
+            'class_id' => $_GET['class_id'] ?? null,
+            'date' => $_GET['date'] ?? null,
+            'student_id' => $_GET['student_id'] ?? null,
+        ];
+
+        $attendance = $this->attendanceModel->getAll($filters);
         Response::success($attendance, 'Attendance records retrieved successfully', 200);
     }
 
@@ -48,10 +54,10 @@ class AttendanceController {
 
         $errors = Validation::validate($rules, $input);
         if (!empty($errors)) {
-            Response::error(['validation' => $errors], 422);
+            Response::error('Validation failed', 422, $errors);
         }
 
-        $input['teacher_id'] = $this->user['id'] ?? null;
+        $input['teacher_id'] = $this->attendanceModel->getTeacherIdByUserId($this->user['id'] ?? null);
 
         $attendance = $this->attendanceModel->create($input);
 
@@ -81,7 +87,7 @@ class AttendanceController {
 
         $errors = Validation::validate($rules, $input);
         if (!empty($errors)) {
-            Response::error(['validation' => $errors], 422);
+            Response::error('Validation failed', 422, $errors);
         }
 
         $attendance = $this->attendanceModel->update($id, $input);

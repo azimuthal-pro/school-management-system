@@ -41,7 +41,7 @@ class SubjectController {
 
         $errors = Validation::validate($rules, $input);
         if (!empty($errors)) {
-            Response::error(['validation' => $errors], 422);
+            Response::error('Validation failed', 422, $errors);
         }
 
         $existing = $this->subjectModel->findByCode($input['code']);
@@ -74,7 +74,7 @@ class SubjectController {
 
         $errors = Validation::validate($rules, $input);
         if (!empty($errors)) {
-            Response::error(['validation' => $errors], 422);
+            Response::error('Validation failed', 422, $errors);
         }
 
         if (isset($input['code'])) {

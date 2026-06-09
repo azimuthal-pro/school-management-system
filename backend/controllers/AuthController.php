@@ -18,14 +18,21 @@ class AuthController {
         if (file_exists($cacheFile)) {
             $data = json_decode(file_get_contents($cacheFile), true);
             if ($data && time() - $data['first_attempt'] < $windowSeconds) {
+                // Still within the window
                 if ($data['attempts'] >= $maxAttempts) {
-                    return false;
+                    return false; // Rate limit exceeded
                 }
+                return true; // Still allowed, but don't reset counter
+            } else {
+                // Window expired, reset counter
+                $data = ['first_attempt' => time(), 'attempts' => 0];
+                file_put_contents($cacheFile, json_encode($data));
+                return true;
             }
         }
         
-        // Reset or initialize
-        $data = ['first_attempt' => time(), 'attempts' => 1];
+        // File doesn't exist, initialize
+        $data = ['first_attempt' => time(), 'attempts' => 0];
         file_put_contents($cacheFile, json_encode($data));
         return true;
     }
@@ -86,7 +93,7 @@ class AuthController {
         $errors = Validation::validate($rules, $input);
         if (!empty($errors)) {
             // Don't count validation errors against rate limit - these are client mistakes
-            Response::error(['validation' => $errors], 422);
+            Response::error('Validation failed', 422, $errors);
         }
 
         // Rate limiting registration attempts - only after validation passes
@@ -107,7 +114,7 @@ class AuthController {
             'name' => $input['name'],
             'email' => $input['email'],
             'password_hash' => $hashedPassword,
-            'role' => $input['role'] ?? 'student'
+            'role' => 'student'
         ]);
 
         if (!$user) {
