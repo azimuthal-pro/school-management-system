@@ -7,6 +7,20 @@
 
 # Build artifacts
 */.next/
+**/.next/
 node_modules/
+**/node_modules/
 vendor/
+**/vendor/
 *.log
+
+# IDE and OS files
+.DS_Store
+.vscode/
+*.swp
+*.swo
+.idea/
+
+# Frontend build output
+frontend/dist/
+frontend/build/
