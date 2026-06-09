@@ -1,2 +1,6 @@
 # school-management-system
-A project to help basic schools run their daily activities online instead of the manual and tedious approach.
+<<<<<<< HEAD
+
+=======
+
+>>>>>>> 154d961e2a207c5915ce060d2670444e237a1ee2
